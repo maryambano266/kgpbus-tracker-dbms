@@ -38,6 +38,9 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 gmaps = googlemaps.Client(key=app.config['GOOGLE_MAPS_API_KEY'])
+@app.before_first_request
+def initialize_database():
+    db.create_all()
 
 # Database Models
 class User(UserMixin, db.Model):
@@ -793,11 +796,6 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template('500.html'), 500
-
-@app.before_first_request
-def initialize_database():
-    db.create_all()
-
 
 # # Run the Application
 # if __name__ == '__main__':
