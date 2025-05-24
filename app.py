@@ -794,10 +794,10 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('500.html'), 500
 
-# Initialize Database
-def init_db():
-    with app.app_context():
-        db.create_all()
+@app.before_first_request
+def initialize_database():
+    db.create_all()
+
 
 # # Run the Application
 # if __name__ == '__main__':
