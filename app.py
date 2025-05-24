@@ -38,9 +38,9 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 gmaps = googlemaps.Client(key=app.config['GOOGLE_MAPS_API_KEY'])
-@app.before_first_request
-def initialize_database():
+with app.app_context():
     db.create_all()
+
 
 # Database Models
 class User(UserMixin, db.Model):
