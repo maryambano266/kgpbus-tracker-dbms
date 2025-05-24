@@ -29,7 +29,7 @@ CORS(app)
 socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
 
 app.config['SECRET_KEY'] = 'rummy'
-app.config['SQLALCHEMY_DATABASE_URI'] ='postgresql://postgres:Rajpriya16%40@localhost/bus'
+app.config['SQLALCHEMY_DATABASE_URI'] ='postgresql://postgres:Allah%40786@localhost/bus'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['GOOGLE_MAPS_API_KEY'] = 'AIzaSyAvJK1GzfKt7ksiZxxshHDL2tnefB1ifJI'
 
