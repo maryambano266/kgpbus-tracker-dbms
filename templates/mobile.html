@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mobile Location Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        h1 {
+            color: #333;
+        }
+        #status {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        .btn {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .btn-stop {
+            background-color: #f44336;
+        }
+        #coordinates {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mobile Location Tracker</h1>
+    <div id="status">Status: Not connected</div>
+    <button id="startTracking" class="btn">Start Tracking</button>
+    <button id="stopTracking" class="btn btn-stop">Stop Tracking</button>
+    
+    <div id="coordinates">Current coordinates: Waiting for GPS...</div>
+    
+    <script>
+        // Connect to SocketIO
+        const socket = io();
+        let trackingInterval = null;
+        const statusDiv = document.getElementById('status');
+        const coordsDiv = document.getElementById('coordinates');
+        
+        // Connection events
+        socket.on('connect', function() {
+            statusDiv.textContent = 'Status: Connected to server';
+        });
+        
+        socket.on('disconnect', function() {
+            statusDiv.textContent = 'Status: Disconnected from server';
+        });
+        
+        socket.on('connection_established', function(data) {
+            console.log('Connection established:', data);
+        });
+        
+        // Button events
+        document.getElementById('startTracking').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                statusDiv.textContent = 'Status: Connected, tracking started';
+                
+                // Clear any existing interval
+                if (trackingInterval) clearInterval(trackingInterval);
+                
+                // Get location immediately once
+                updateLocation();
+                
+                // Then set up interval for continuous updates
+                trackingInterval = setInterval(updateLocation, 5000); // Update every 5 seconds
+            } else {
+                statusDiv.textContent = 'Status: Geolocation not supported in this browser';
+            }
+        });
+        
+        document.getElementById('stopTracking').addEventListener('click', function() {
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
+                trackingInterval = null;
+                statusDiv.textContent = 'Status: Connected, tracking stopped';
+            }
+        });
+        
+        // Location update function
+        function updateLocation() {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const locationData = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    };
+                    
+                    coordsDiv.textContent = `Current coordinates: Lat ${locationData.latitude.toFixed(6)}, Lng ${locationData.longitude.toFixed(6)}`;
+                    
+                    // Send location to server
+                    fetch('/update_location', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(locationData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Location update response:', data);
+                        statusDiv.textContent = 'Status: Connected, location updated';
+                    })
+                    .catch(error => {
+                        console.error('Error updating location:', error);
+                        statusDiv.textContent = 'Status: Error updating location';
+                    });
+                },
+                function(error) {
+                    console.error('Geolocation error:', error);
+                    let errorMsg = 'Status: Error getting location';
+                    
+                    // Add more detailed error messages
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg += ' - Permission denied';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg += ' - Position unavailable';
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg += ' - Timeout';
+                            break;
+                    }
+                    
+                    statusDiv.textContent = errorMsg;
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+    </script>
+</body>
+</html>

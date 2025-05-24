@@ -1,0 +1,83 @@
+gram_panchayat_system/
+│
+├── app/
+│   ├── __init__.py                 # Flask application initialization
+│   ├── config.py                   # Configuration settings
+│   ├── models/                     # Database models
+│   │   ├── __init__.py
+│   │   ├── user.py                 # User and authentication models
+│   │   ├── citizen.py              # Citizen and household models
+│   │   ├── land.py                 # Land record models
+│   │   ├── employee.py             # Panchayat employee models
+│   │   ├── asset.py                # Village asset models
+│   │   ├── welfare.py              # Welfare scheme models
+│   │   ├── health.py               # Health record models
+│   │   ├── census.py               # Vital events models
+│   │   ├── complaint.py            # Complaints and grievances models
+│   │   ├── project.py              # Development project models
+│   │   └── meeting.py              # Meeting minutes models
+│   │
+│   ├── routes/                     # Blueprint routes for different modules
+│   │   ├── __init__.py
+│   │   ├── auth.py                 # Authentication routes
+│   │   ├── admin.py                # Admin dashboard routes
+│   │   ├── employee.py             # Employee dashboard routes
+│   │   ├── citizen.py              # Citizen dashboard routes
+│   │   ├── government.py           # Government monitor routes
+│   │   ├── land.py                 # Land management routes
+│   │   ├── welfare.py              # Welfare scheme routes
+│   │   ├── health.py               # Health record routes
+│   │   ├── asset.py                # Asset management routes
+│   │   ├── complaint.py            # Complaint management routes
+│   │   └── reports.py              # Statistical reports generation
+│   │
+│   ├── static/                     # Static files (CSS, JS, images)
+│   │   ├── css/
+│   │   ├── js/
+│   │   ├── img/
+│   │   └── vendor/                 # Third-party libraries (Bootstrap, etc.)
+│   │
+│   ├── templates/                  # Jinja2 templates
+│   │   ├── base.html               # Base template with common elements
+│   │   ├── auth/                   # Authentication templates
+│   │   ├── admin/                  # Admin dashboard templates
+│   │   ├── employee/               # Employee dashboard templates
+│   │   ├── citizen/                # Citizen dashboard templates
+│   │   ├── government/             # Government monitor templates
+│   │   ├── land/                   # Land management templates
+│   │   ├── welfare/                # Welfare scheme templates
+│   │   ├── health/                 # Health record templates
+│   │   ├── asset/                  # Asset management templates
+│   │   ├── complaint/              # Complaint management templates
+│   │   └── reports/                # Report templates
+│   │
+│   ├── forms/                      # WTForms for data validation
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── citizen.py
+│   │   ├── land.py
+│   │   ├── welfare.py
+│   │   ├── health.py
+│   │   ├── asset.py
+│   │   └── complaint.py
+│   │
+│   └── utils/                      # Utility functions
+│       ├── __init__.py
+│       ├── decorators.py           # Custom decorators for role-based access
+│       ├── helpers.py              # Helper functions
+│       └── validators.py           # Custom validators
+│
+├── migrations/                     # Database migrations (Flask-Migrate)
+│
+├── tests/                          # Unit and integration tests
+│   ├── __init__.py
+│   ├── test_auth.py
+│   ├── test_citizen.py
+│   └── ...
+│
+├── instance/                       # Instance-specific config
+│   └── config.py                   # Local config overrides
+│
+├── requirements.txt                # Project dependencies
+├── run.py                          # Application entry point
+└── README.md                       # Project documentation

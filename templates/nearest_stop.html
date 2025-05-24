@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nearest Bus Stop & ETA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .route-info {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .eta-box {
+            background-color: #d1e7dd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stops-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .stops-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .stops-list li:last-child {
+            border-bottom: none;
+        }
+        .current-stop {
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .back-button, .search-button {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #4285F4;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .back-button:hover, .search-button:hover {
+            background-color: #3367D6;
+        }
+        select, input {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            width: 100%;
+        }
+        .route-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Nearest Bus Stop & ETA</h1>
+    
+    <div class="info-box">
+        <h2>Current Stop Information</h2>
+        <p>Stop ID: <strong>{{ stop_id }}</strong></p>
+        <p>Stop Name: <strong>{{ stop_name }}</strong></p>
+        <p>Distance from you: <strong>{{ "%.2f"|format(distance) }} km</strong></p>
+    </div>
+
+    <div class="route-info">
+        <h2>Select Route</h2>
+        <form id="routeForm" method="POST" action="{{ url_for('calculate_eta') }}">
+            <input type="hidden" name="current_stop_id" value="{{ stop_id }}">
+            <input type="hidden" name="user_lat" value="{{ user_lat }}">
+            <input type="hidden" name="user_lon" value="{{ user_lon }}">
+            
+            <div>
+                <label for="route_select">Available Routes:</label>
+                <select id="route_select" name="route_id" required>
+                    <option value="">-- Select Route --</option>
+                    {% for route in available_routes %}
+                    <option value="{{ route.route_id }}" 
+                            data-color="{{ route.color_code }}">
+                        {{ route.name }} ({{ route.description }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button type="submit" class="search-button">Show Bus Schedule</button>
+        </form>
+    </div>
+
+    {% if eta_info %}
+    <div class="eta-box">
+        <h2>Bus Schedule</h2>
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+            <div class="route-badge" style="background-color: {{ eta_info.route_color }}">{{ eta_info.route_name }}</div>
+            <p style="margin: 0;"><strong>Bus:</strong> {{ eta_info.bus_name }}</p>
+        </div>
+        <p><strong>Current Stop:</strong> {{ stop_name }}</p>
+        <p><strong>Next Bus Arrival:</strong> {{ eta_info.arrival_time }}</p>
+        {% if eta_info.delay_minutes > 0 %}
+        <p><strong>Delay:</strong> {{ eta_info.delay_minutes }} minutes</p>
+        {% endif %}
+        
+        <h3>Stops on Route</h3>
+        <ul class="stops-list">
+            {% for stop in eta_info.stops_list %}
+            <li class="{% if stop.stop_id == stop_id %}current-stop{% endif %}">
+                {{ stop.sequence }}. {{ stop.name }} 
+                {% if stop.stop_id == stop_id %}(You are here){% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <div id="map"></div>
+    
+    <a href="{{ url_for('dashboard') }}" class="back-button">Back to Dashboard</a>
+    
+    <script>
+        function initMap() {
+            // Get coordinates from Flask template
+            const userLat = {{ user_lat }};
+            const userLon = {{ user_lon }};
+            const stopLat = {{ stop_lat }};
+            const stopLon = {{ stop_lon }};
+            
+            // Create map centered between your position and the bus stop
+            const center = {
+                lat: (userLat + stopLat) / 2,
+                lng: (userLon + stopLon) / 2
+            };
+            
+            const map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 15,
+                center: center,
+                mapTypeId: 'roadmap'
+            });
+            
+            // Add marker for user's current location
+            const userMarker = new google.maps.Marker({
+                position: { lat: userLat, lng: userLon },
+                map: map,
+                title: 'Your Location',
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: '#4285F4',
+                    fillOpacity: 1,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 2
+                }
+            });
+            
+            // Add marker for the nearest bus stop
+            const busStopMarker = new google.maps.Marker({
+                position: { lat: stopLat, lng: stopLon },
+                map: map,
+                title: 'Nearest Bus Stop (ID: ' + {{ stop_id }} + ')',
+                icon: {
+                    url: 'https://maps.google.com/mapfiles/ms/icons/bus.png',
+                    scaledSize: new google.maps.Size(32, 32)
+                }
+            });
+            
+            // Add info window for bus stop
+            const infoWindow = new google.maps.InfoWindow({
+                content: '<div><strong>Bus Stop: {{ stop_name }}</strong><br>' +
+                         'Stop ID: {{ stop_id }}<br>' +
+                         'Distance: {{ "%.2f"|format(distance) }} km</div>'
+            });
+            
+            busStopMarker.addListener('click', function() {
+                infoWindow.open(map, busStopMarker);
+            });
+            
+            // Draw path between user location and bus stop
+            const directionsService = new google.maps.DirectionsService();
+            const directionsRenderer = new google.maps.DirectionsRenderer({
+                suppressMarkers: true,  // Don't show extra markers
+                polylineOptions: {
+                    strokeColor: '#4285F4',
+                    strokeWeight: 5
+                }
+            });
+            
+            directionsRenderer.setMap(map);
+            
+            directionsService.route({
+                origin: { lat: userLat, lng: userLon },
+                destination: { lat: stopLat, lng: stopLon },
+                travelMode: google.maps.TravelMode.WALKING
+            }, function(response, status) {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(response);
+                }
+            });
+            
+            {% if eta_info and eta_info.route_points %}
+            // Draw the route path if ETA info is available
+            const routePath = new google.maps.Polyline({
+                path: {{ eta_info.route_points|tojson }},
+                geodesic: true,
+                strokeColor: '{{ eta_info.route_color }}',
+                strokeOpacity: 0.8,
+                strokeWeight: 4
+            });
+            
+            routePath.setMap(map);
+            
+            // Adjust bounds to include all points
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend({lat: userLat, lng: userLon});
+            bounds.extend({lat: stopLat, lng: stopLon});
+            
+            // Include all route points in bounds
+            {% for point in eta_info.route_points %}
+            bounds.extend({lat: {{ point.lat }}, lng: {{ point.lng }}});
+            {% endfor %}
+            
+            map.fitBounds(bounds);
+            {% endif %}
+        }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap" async defer></script>
+</body>
+</html>

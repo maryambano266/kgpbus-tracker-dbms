@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Tracker Feedback</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #f39c12;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 40px 0;
+            background: linear-gradient(135deg, #f5f7fa, #e4e8f0);
+            min-height: 100vh;
+        }
+        
+        .feedback-container {
+            max-width: 800px;
+            margin: 30px auto;
+            background-color: white;
+            border-radius: 15px;
+            padding: 0;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: none;
+        }
+        
+        .feedback-header {
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .feedback-body {
+            padding: 30px;
+        }
+        
+        .heading {
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 1.75rem;
+        }
+        
+        .subheading {
+            opacity: 0.9;
+            font-weight: 300;
+            font-size: 1rem;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 8px;
+        }
+        
+        .form-control {
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            box-shadow: none;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .star-rating {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+            margin: 15px 0;
+        }
+        
+        .star-rating input {
+            display: none;
+        }
+        
+        .star-rating label {
+            cursor: pointer;
+            font-size: 30px;
+            color: #e0e0e0;
+            padding: 0 5px;
+            transition: all 0.2s ease;
+        }
+        
+        .star-rating label:hover,
+        .star-rating label:hover ~ label,
+        .star-rating input:checked ~ label {
+            color: var(--accent-color);
+            transform: scale(1.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .feedback-icon {
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 10px;
+        }
+        
+        .feedback-types {
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .feedback-type-option {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+            height: 100%;
+        }
+        
+        .feedback-type-option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .feedback-type-option.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .feedback-type-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+        
+        .feedback-type-label {
+            font-weight: 600;
+            color: var(--dark-color);
+            font-size: 0.9rem;
+        }
+        
+        #description {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-color: var(--dark-color);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding: 15px 0;
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .feedback-container {
+                margin: 15px;
+                padding: 0;
+            }
+            
+            .feedback-body {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-bus me-2"></i>Campus Bus Tracker
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/track">Track</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/view_routes">Routes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/feedback">Feedback</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="feedback-container">
+            <div class="feedback-header">
+                <div class="feedback-icon">
+                    <i class="fas fa-comment-dots"></i>
+                </div>
+                <h2 class="heading">Bus Tracker Feedback</h2>
+                <p class="subheading mb-0">We value your feedback! Help us improve your experience.</p>
+            </div>
+            
+            <div class="feedback-body">
+                <form method="POST" action="{{ url_for('submit_feedback') }}">
+                    <div class="form-group">
+                        <label class="form-label">Feedback Type:</label>
+                        
+                        <!-- Hidden select for form submission -->
+                        <select class="d-none" id="feedback_type" name="feedback_type" required>
+                            <option value="" selected disabled>Select a feedback type</option>
+                            <option value="General">General Feedback</option>
+                            <option value="Bus Service">Bus Service</option>
+                            <option value="App Experience">App Experience</option>
+                            <option value="Suggestion">Suggestion</option>
+                            <option value="Complaint">Complaint</option>
+                        </select>
+                        
+                        <!-- Visual feedback type options -->
+                        <div class="row g-2 mt-2">
+                            <div class="col-md-4 col-6">
+                                <div class="feedback-type-option" data-value="General" onclick="selectFeedbackType(this, 'General')">
+                                    <div class="feedback-type-icon">
+                                        <i class="fas fa-comments"></i>
+                                    </div>
+                                    <div class="feedback-type-label">General</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <div class="feedback-type-option" data-value="Bus Service" onclick="selectFeedbackType(this, 'Bus Service')">
+                                    <div class="feedback-type-icon">
+                                        <i class="fas fa-bus-alt"></i>
+                                    </div>
+                                    <div class="feedback-type-label">Bus Service</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <div class="feedback-type-option" data-value="App Experience" onclick="selectFeedbackType(this, 'App Experience')">
+                                    <div class="feedback-type-icon">
+                                        <i class="fas fa-mobile-alt"></i>
+                                    </div>
+                                    <div class="feedback-type-label">App Experience</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-6">
+                                <div class="feedback-type-option" data-value="Suggestion" onclick="selectFeedbackType(this, 'Suggestion')">
+                                    <div class="feedback-type-icon">
+                                        <i class="fas fa-lightbulb"></i>
+                                    </div>
+                                    <div class="feedback-type-label">Suggestion</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-6">
+                                <div class="feedback-type-option" data-value="Complaint" onclick="selectFeedbackType(this, 'Complaint')">
+                                    <div class="feedback-type-icon">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                    </div>
+                                    <div class="feedback-type-label">Complaint</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">How would you rate your experience?</label>
+                        <div class="star-rating">
+                            <input type="radio" id="star5" name="rating" value="5" required />
+                            <label for="star5" title="5 stars">★</label>
+                            <input type="radio" id="star4" name="rating" value="4" />
+                            <label for="star4" title="4 stars">★</label>
+                            <input type="radio" id="star3" name="rating" value="3" />
+                            <label for="star3" title="3 stars">★</label>
+                            <input type="radio" id="star2" name="rating" value="2" />
+                            <label for="star2" title="2 stars">★</label>
+                            <input type="radio" id="star1" name="rating" value="1" />
+                            <label for="star1" title="1 star">★</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description" class="form-label">Tell us more:</label>
+                        <textarea class="form-control" id="description" name="description" rows="5" required placeholder="Please share your thoughts, suggestions, or concerns..."></textarea>
+                    </div>
+
+                    <!-- Hidden user_id field -->
+                    <input type="hidden" name="user_id" value="{{ current_user.id if current_user.is_authenticated else 999 }}">
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Feedback
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="mb-0">© 2025 Campus Bus Tracker. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Function to handle feedback type selection
+        function selectFeedbackType(element, value) {
+            // Remove selected class from all options
+            document.querySelectorAll('.feedback-type-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked option
+            element.classList.add('selected');
+            
+            // Update hidden select value
+            document.getElementById('feedback_type').value = value;
+        }
+    </script>
+</body>
+</html>

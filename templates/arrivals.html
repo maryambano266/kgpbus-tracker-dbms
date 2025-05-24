@@ -1,0 +1,535 @@
+<!-- templates/arrivals.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Arrival Times</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .bus-icon {
+            width: 30px;
+            height: 30px;
+            background-color: rgb(52, 152, 219);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+        }
+        .stop-icon {
+            width: 20px;
+            height: 20px;
+            background-color: #ff6b6b;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .user-icon {
+            width: 20px;
+            height: 20px;
+            background-color: #5cb85c;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .eta-badge {
+            font-size: 1.1rem;
+            padding: 8px 12px;
+        }
+        .route-badge {
+            margin-right: 10px;
+        }
+        .arrival-time {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .vehicle-info {
+            color: #6c757d;
+        }
+        .delayed {
+            color: #dc3545;
+        }
+        .circle-marker {
+            color: white;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">IIT KGP Bus Tracker</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('arrivals') }}">Arrivals</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view_routes') }}">Routes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view_schedules') }}">Schedules</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1 class="mb-4">Bus Arrival Times</h1>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Live Bus Map</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="map"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Find Nearest Stop</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Use your current location to find the nearest bus stop.</p>
+                        <button id="findNearestStop" class="btn btn-primary">Find Nearest Stop</button>
+                        <div id="nearestStopResult" class="mt-3 d-none">
+                            <h5>Nearest Stop: <span id="nearestStopName"></span></h5>
+                            <p>Distance: <span id="nearestStopDistance"></span> km</p>
+                            <button id="showArrivalsBtn" class="btn btn-success">Show Arrivals</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Select Stop</h5>
+                    </div>
+                    <div class="card-body">
+                        <select id="stopSelect" class="form-select">
+                            <option value="">-- Select a stop --</option>
+                            <!-- Stops will be populated by JavaScript -->
+                        </select>
+                        <button id="getArrivalsBtn" class="btn btn-primary mt-3">Get Arrivals</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="arrivalsContainer" class="mt-4 d-none">
+            <h2>Arrivals at <span id="selectedStopName"></span></h2>
+            
+            <div id="noArrivalsMessage" class="alert alert-info d-none">
+                No upcoming arrivals found for this stop.
+            </div>
+            
+            <div id="arrivalsList" class="row">
+                <!-- Arrival items will be added here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the map centered on IIT KGP
+            const map = L.map('map').setView([22.3179, 87.3090], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Variables to store markers
+            let busMarkers = {};
+            let stopMarkers = {};
+            let routePolylines = {};
+            let userMarker = null;
+            let selectedStop = null;
+            let nearestStop = null;
+            
+            // Populate stop select dropdown
+            fetch('/stops')
+                .then(response => response.json())
+                .then(stops => {
+                    const selectElement = document.getElementById('stopSelect');
+                    
+                    stops.forEach(stop => {
+                        const option = document.createElement('option');
+                        option.value = stop.stop_id;
+                        option.textContent = stop.name;
+                        selectElement.appendChild(option);
+                        
+                        // Add stop marker to the map
+                        const stopIcon = L.divIcon({
+                            className: 'stop-icon',
+                            iconSize: [20, 20]
+                        });
+                        
+                        const marker = L.marker([stop.latitude, stop.longitude], {icon: stopIcon})
+                            .addTo(map)
+                            .bindPopup(`<b>${stop.name}</b><br>Stop ID: ${stop.stop_id}`);
+                        
+                        stopMarkers[stop.stop_id] = marker;
+                    });
+                })
+                .catch(error => console.error('Error fetching stops:', error));
+            
+            // Load bus routes
+            fetch('/view_routes')
+                .then(response => response.text())
+                .then(html => {
+                    // Extract route information from HTML response
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const routeRows = doc.querySelectorAll('table tbody tr');
+                    
+                    routeRows.forEach(row => {
+                        const routeId = row.cells[0].textContent.trim();
+                        const routeName = row.cells[1].textContent.trim();
+                        const routeColor = row.cells[3].textContent.trim();
+                        
+                        // Fetch stops for each route
+                        fetch(`/route_stops/${routeId}`)
+                            .then(response => response.json())
+                            .then(stops => {
+                                if (stops.length > 0) {
+                                    const routePoints = stops.map(stop => [stop.latitude, stop.longitude]);
+                                    const routeLine = L.polyline(routePoints, {
+                                        color: routeColor || '#3388ff',
+                                        weight: 4,
+                                        opacity: 0.6
+                                    }).addTo(map);
+                                    
+                                    routeLine.bindPopup(`<b>${routeName}</b>`);
+                                    routePolylines[routeId] = routeLine;
+                                }
+                            })
+                            .catch(error => console.error(`Error fetching stops for route ${routeId}:`, error));
+                    });
+                })
+                .catch(error => console.error('Error fetching routes:', error));
+            
+            // Load bus locations
+            function loadBusLocations() {
+                fetch('/bus_locations')
+                    .then(response => response.json())
+                    .then(buses => {
+                        // Clear existing bus markers
+                        Object.values(busMarkers).forEach(marker => marker.remove());
+                        busMarkers = {};
+                        
+                        buses.forEach(bus => {
+                            const busIcon = L.divIcon({
+                                className: 'bus-icon',
+                                html: `<span>🚌</span>`,
+                                iconSize: [30, 30]
+                            });
+                            
+                            const marker = L.marker([bus.current_latitude, bus.current_longitude], {
+                                icon: busIcon,
+                                title: `Bus ${bus.vehicle_id}`
+                            }).addTo(map);
+                            
+                            marker.bindPopup(`
+                                <b>Bus ${bus.vehicle_id}</b><br>
+                                Speed: ${bus.speed ? bus.speed.toFixed(1) + ' km/h' : 'N/A'}<br>
+                                Last Updated: ${new Date(bus.timestamp).toLocaleTimeString()}
+                            `);
+                            
+                            busMarkers[bus.vehicle_id] = marker;
+                        });
+                    })
+                    .catch(error => console.error('Error fetching bus locations:', error));
+            }
+            
+            // Initial load of bus locations
+            loadBusLocations();
+            
+            // Set up periodic refresh of bus locations
+            setInterval(loadBusLocations, 10000); // Refresh every 10 seconds
+            
+            // Find nearest stop button handler
+            document.getElementById('findNearestStop').addEventListener('click', function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            const userLat = position.coords.latitude;
+                            const userLon = position.coords.longitude;
+                            
+                            // Add or update user marker
+                            const userIcon = L.divIcon({
+                                className: 'user-icon',
+                                iconSize: [20, 20]
+                            });
+                            
+                            if (userMarker) {
+                                userMarker.setLatLng([userLat, userLon]);
+                            } else {
+                                userMarker = L.marker([userLat, userLon], {icon: userIcon})
+                                    .addTo(map)
+                                    .bindPopup('Your Location');
+                            }
+                            
+                            // Center map on user location
+                            map.setView([userLat, userLon], 16);
+                            
+                            // Find nearest stop
+                            let minDistance = Infinity;
+                            let closestStopId = null;
+                            
+                            Object.entries(stopMarkers).forEach(([stopId, marker]) => {
+                                const stopPos = marker.getLatLng();
+                                const distance = haversineDistance(
+                                    userLat, userLon,
+                                    stopPos.lat, stopPos.lng
+                                );
+                                
+                                if (distance < minDistance) {
+                                    minDistance = distance;
+                                    closestStopId = stopId;
+                                }
+                            });
+                            
+                            if (closestStopId) {
+                                // Highlight the nearest stop
+                                const nearestStopMarker = stopMarkers[closestStopId];
+                                nearestStopMarker.openPopup();
+                                
+                                // Store for later use
+                                nearestStop = {
+                                    stop_id: closestStopId,
+                                    name: nearestStopMarker.getPopup().getContent().split('<br>')[0].replace('<b>', '').replace('</b>', ''),
+                                    distance: minDistance
+                                };
+                                
+                                // Update UI
+                                document.getElementById('nearestStopName').textContent = nearestStop.name;
+                                document.getElementById('nearestStopDistance').textContent = minDistance.toFixed(2);
+                                document.getElementById('nearestStopResult').classList.remove('d-none');
+                                
+                                // Update dropdown selection
+                                document.getElementById('stopSelect').value = closestStopId;
+                            }
+                        },
+                        function(error) {
+                            alert('Error getting your location: ' + error.message);
+                        }
+                    );
+                } else {
+                    alert('Geolocation is not supported by your browser');
+                }
+            });
+            
+            // Show arrivals for nearest stop
+            document.getElementById('showArrivalsBtn').addEventListener('click', function() {
+                if (nearestStop) {
+                    fetchArrivalsForStop(nearestStop.stop_id);
+                }
+            });
+            
+            // Get arrivals button handler
+            document.getElementById('getArrivalsBtn').addEventListener('click', function() {
+                const stopId = document.getElementById('stopSelect').value;
+                if (stopId) {
+                    fetchArrivalsForStop(stopId);
+                } else {
+                    alert('Please select a bus stop');
+                }
+            });
+            
+            // Function to fetch arrivals for a stop
+            function fetchArrivalsForStop(stopId) {
+                // Show loading state
+                document.getElementById('arrivalsContainer').classList.remove('d-none');
+                document.getElementById('selectedStopName').textContent = 'Loading...';
+                document.getElementById('arrivalsList').innerHTML = '<div class="col-12"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+                
+                // Get stop name
+                let stopName = '';
+                if (stopMarkers[stopId]) {
+                    stopName = stopMarkers[stopId].getPopup().getContent().split('<br>')[0].replace('<b>', '').replace('</b>', '');
+                }
+                
+                // Fetch the next arrivals
+                fetch(`/next_arrivals/${stopId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('selectedStopName').textContent = data.stop_name || stopName;
+                        
+                        // Clear previous arrivals
+                        const arrivalsListElement = document.getElementById('arrivalsList');
+                        arrivalsListElement.innerHTML = '';
+                        
+                        // Handle no arrivals case
+                        if (!data.next_arrivals || data.next_arrivals.length === 0) {
+                            document.getElementById('noArrivalsMessage').classList.remove('d-none');
+                            return;
+                        }
+                        
+                        document.getElementById('noArrivalsMessage').classList.add('d-none');
+                        
+                        // Add each arrival to the list
+                        data.next_arrivals.forEach(arrival => {
+                            // Get route color
+                            let routeColor = '#3388ff';
+                            if (routePolylines[arrival.route_id]) {
+                                routeColor = routePolylines[arrival.route_id].options.color;
+                            }
+                            
+                            const arrivalCard = document.createElement('div');
+                            arrivalCard.className = 'col-md-6 mb-3';
+                            arrivalCard.innerHTML = `
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="badge rounded-pill route-badge" style="background-color: ${routeColor}">
+                                                ${arrival.route_name}
+                                            </span>
+                                        </div>
+                                        <span class="eta-badge badge bg-primary">
+                                            ${getArrivalTimeFromNow(arrival.scheduled_arrival)}
+                                        </span>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="arrival-time">
+                                            ${arrival.scheduled_arrival}
+                                        </div>
+                                        <div class="vehicle-info">
+                                            ${arrival.vehicle_name} (ID: ${arrival.vehicle_id})
+                                        </div>
+                                        ${arrival.is_delayed ? 
+                                            `<div class="delayed mt-2">
+                                                <i class="bi bi-exclamation-triangle-fill"></i> 
+                                                Delayed by ${arrival.delay_minutes} minutes
+                                            </div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                            
+                            arrivalsListElement.appendChild(arrivalCard);
+                        });
+                        
+                        // Center map on the selected stop and highlight it
+                        if (stopMarkers[stopId]) {
+                            const stopPos = stopMarkers[stopId].getLatLng();
+                            map.setView([stopPos.lat, stopPos.lng], 16);
+                            stopMarkers[stopId].openPopup();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching arrivals:', error);
+                        document.getElementById('selectedStopName').textContent = 'Error';
+                        document.getElementById('arrivalsList').innerHTML = `
+                            <div class="col-12">
+                                <div class="alert alert-danger">
+                                    Failed to load arrival information. Please try again later.
+                                </div>
+                            </div>
+                        `;
+                    });
+            }
+            
+            // Helper function to calculate distance between two coordinates (Haversine formula)
+            function haversineDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371; // Earth radius in kilometers
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c; // Distance in km
+            }
+            
+            // Helper function to calculate time difference from now
+            function getArrivalTimeFromNow(scheduledTime) {
+                const now = new Date();
+                const scheduledDate = new Date();
+                
+                const [hours, minutes] = scheduledTime.split(':').map(Number);
+                scheduledDate.setHours(hours, minutes, 0);
+                
+                // If scheduled time is earlier than current time, it's for the next day
+                if (scheduledDate < now) {
+                    scheduledDate.setDate(scheduledDate.getDate() + 1);
+                }
+                
+                const diffMs = scheduledDate - now;
+                const diffMins = Math.round(diffMs / 60000);
+                
+                if (diffMins <= 0) {
+                    return 'Due now';
+                } else if (diffMins === 1) {
+                    return '1 min';
+                } else if (diffMins < 60) {
+                    return `${diffMins} mins`;
+                } else {
+                    const hours = Math.floor(diffMins / 60);
+                    const mins = diffMins % 60;
+                    return `${hours}h ${mins}m`;
+                }
+            }
+            
+            // Connect to Socket.IO for real-time updates (if implemented)
+            try {
+                const socket = io();
+                
+                socket.on('bus_location_update', function(data) {
+                    // Update bus marker position
+                    if (busMarkers[data.vehicle_id]) {
+                        busMarkers[data.vehicle_id].setLatLng([data.latitude, data.longitude]);
+                        
+                        // Update popup content
+                        busMarkers[data.vehicle_id].setPopupContent(`
+                            <b>Bus ${data.vehicle_id}</b><br>
+                            Speed: ${data.speed ? data.speed.toFixed(1) + ' km/h' : 'N/A'}<br>
+                            Last Updated: ${new Date().toLocaleTimeString()}
+                        `);
+                    }
+                });
+                
+                socket.on('arrival_update', function(data) {
+                    // If we're currently viewing this stop, refresh the arrivals
+                    const currentStopId = document.getElementById('stopSelect').value;
+                    if (currentStopId && currentStopId == data.stop_id) {
+                        fetchArrivalsForStop(currentStopId);
+                    }
+                });
+            } catch (e) {
+                console.log('Socket.IO not available or error:', e);
+            }
+        });
+    </script>
+</body>
+</html>

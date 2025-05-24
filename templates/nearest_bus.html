@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2>Nearest Bus Details</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Bus Information</h4>
+                    <p><strong>Vehicle ID:</strong> {{ vehicle_id }}</p>
+                    <p><strong>Distance:</strong> {{ "%.2f"|format(distance) }} km</p>
+                </div>
+                {% if nearest_stop %}
+                <div class="col-md-6">
+                    <h4>Nearest Bus Stop</h4>
+                    <p><strong>Name:</strong> {{ nearest_stop.name }}</p>
+                    <p><strong>Location:</strong> {{ "%.4f"|format(nearest_stop.latitude) }}, {{ "%.4f"|format(nearest_stop.longitude) }}</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div id="map" style="height: 500px; width: 100%;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=geometry"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map
+    var map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: {{ user_lat }}, lng: {{ user_lon }} },
+        zoom: 13
+    });
+
+    // User location marker
+    var userMarker = new google.maps.Marker({
+        position: { lat: {{ user_lat }}, lng: {{ user_lon }} },
+        map: map,
+        title: 'Your Location',
+        icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+    });
+
+    // Bus location marker
+    var busMarker = new google.maps.Marker({
+        position: { lat: {{ bus_lat }}, lng: {{ bus_lon }} },
+        map: map,
+        title: 'Nearest Bus',
+        icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+    });
+
+    {% if nearest_stop %}
+    // Nearest bus stop marker
+    var stopMarker = new google.maps.Marker({
+        position: { lat: {{ nearest_stop.latitude }}, lng: {{ nearest_stop.longitude }} },
+        map: map,
+        title: '{{ nearest_stop.name }}',
+        icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+    });
+    {% endif %}
+
+    // Draw line between user and bus
+    var line = new google.maps.Polyline({
+        path: [
+            { lat: {{ user_lat }}, lng: {{ user_lon }} },
+            { lat: {{ bus_lat }}, lng: {{ bus_lon }} }
+        ],
+        geodesic: true,
+        strokeColor: '#FF0000',
+        strokeOpacity: 1.0,
+        strokeWeight: 2
+    });
+    line.setMap(map);
+});
+</script>
+{% endblock %}

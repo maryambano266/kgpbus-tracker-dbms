@@ -1,0 +1,258 @@
+ Create tables
+CREATE TABLE stops (
+    stop_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    latitude FLOAT NOT NULL,
+    longitude FLOAT NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE routes (
+    route_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    color_code VARCHAR(20),
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE route_stops (
+    route_stop_id SERIAL PRIMARY KEY,
+    route_id INTEGER REFERENCES routes(route_id),
+    stop_id INTEGER REFERENCES stops(stop_id),
+    stop_sequence INTEGER NOT NULL,
+    distance_from_previous FLOAT,
+    time_from_previous INTEGER
+);
+
+CREATE TABLE vehicles (
+    vehicle_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    capacity INTEGER,
+    registration_number VARCHAR(50),
+    is_accessible BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE schedule (
+    schedule_id SERIAL PRIMARY KEY,
+    route_id INTEGER REFERENCES routes(route_id),
+    vehicle_id INTEGER REFERENCES vehicles(vehicle_id),
+    start_time TIME NOT NULL,
+    day_of_week VARCHAR(20) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE live_tracking (
+    tracking_id SERIAL PRIMARY KEY,
+    vehicle_id INTEGER REFERENCES vehicles(vehicle_id),
+    route_id INTEGER REFERENCES routes(route_id),
+    current_latitude FLOAT NOT NULL,
+    current_longitude FLOAT NOT NULL,
+    current_stop_id INTEGER REFERENCES stops(stop_id),
+    next_stop_id INTEGER REFERENCES stops(stop_id),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    speed FLOAT,
+    heading FLOAT,
+    is_delayed BOOLEAN DEFAULT FALSE,
+    delay_minutes INTEGER DEFAULT 0
+);
+
+CREATE TABLE user_feedback (
+    feedback_id SERIAL PRIMARY KEY,
+    user_id INTEGER,
+    vehicle_id INTEGER REFERENCES vehicles(vehicle_id),
+    route_id INTEGER REFERENCES routes(route_id),
+    feedback_type VARCHAR(50) NOT NULL,
+    description TEXT,
+    rating INTEGER CHECK (rating BETWEEN 1 AND 5),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_resolved BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE notifications (
+    notification_id SERIAL PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    route_id INTEGER REFERENCES routes(route_id),
+    stop_id INTEGER REFERENCES stops(stop_id),
+    severity VARCHAR(20) NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- Insert stops data
+INSERT INTO stops (name, latitude, longitude, description, is_active) VALUES
+('Main Building', 22.319679, 87.309471, 'Main administrative building of IIT KGP', TRUE),
+('Clock Tower', 22.317129, 87.307070, 'Iconic clock tower at IIT KGP', TRUE),
+('SNVH Hall', 22.316624905891214, 87.30556613170285, 'Girls hall near MTH and Clock tower', TRUE),
+('Vikramshila', 22.317641, 87.311473, 'Vikramshila complex and library', TRUE),
+('Nalanda', 22.316675, 87.317338, 'Nalanda classroom complex', TRUE),
+('CSE Department', 22.318186, 87.309761, 'Computer Science and Engineering Department', TRUE),
+('Tech M', 22.314845, 87.300635, 'Tech Market area', TRUE),
+('Gymkhana', 22.319166, 87.302936, 'Student activity center', TRUE),
+('MMM Hall',22.32209761555508, 87.3018116554242, 'Boys hall of residence', TRUE),
+('RK Hall', 22.322733163248014, 87.30675136678559, 'Boy hall near food city', TRUE),
+('VS Hall', 22.3209708717189, 87.30623156505513, 'IDK Hall', TRUE),
+('EE Dept', 22.32133096860829, 87.31386554856172, 'Wrost prof dept', TRUE),
+('Aero Dept', 22.32254515866566, 87.3157739337987 , 'Maryams dept', TRUE),
+('OENA', 22.322014862379916, 87.31735378720106, 'Ocean engg and naval archi dept', TRUE),
+('BC Roy', 22.317153, 87.300920, 'BC Roy Hospital and Medical Center', TRUE),
+('Mech Department', 22.318955, 87.312439, 'Mechanical Engineering Department', TRUE),
+('PFC (Pan Loop)', 22.319050, 87.300236, 'Pan Loop food court area', TRUE),
+('Puri Gate', 22.322518, 87.310180, 'Puri Gate entrance', TRUE),
+('SBP Hall', 22.311845, 87.318430, 'SBP Hall of Residence', TRUE),
+('Nehru Museum', 22.318876, 87.314873, 'Nehru Museum of Science & Technology', TRUE);
+
+-- Insert routes data
+INSERT INTO routes (name, description, color_code, is_active) VALUES
+('Route 1', 'RK To Nalanda via SNVH,Clock Tower, Vikramshila', '#FF5733', TRUE),
+('Route 2', 'Tech M to Puri Gate via BC Roy, Pan Loop, Gymkhana, Main Building', '#33A8FF', TRUE),
+('Route 3', 'MMM to Nehru Museum via RK,Main Building, Clock Tower,CSE , Mech Department', '#33FF57', TRUE),
+('Route 1 Return', 'Nalanda to RK via Vikramshila, Clock Tower, SNVH ', '#FF5733', TRUE),
+('Route 2 Return', 'Puri Gate to Tech M via Main Building, Gymkhana, Pan Loop, BC Roy', '#FF5733', TRUE),
+('Route 3 Return', 'Nehru Museum to MMM via Mech Department, CSE, Clock Tower, Main building, RK ', '#33FF57', TRUE);
+
+-- Insert vehicles data (hypothetical data)
+INSERT INTO vehicles (name, capacity, registration_number, is_accessible, is_active) VALUES
+('Bus 01', 40, 'WB20AB1234', TRUE, TRUE),
+('Bus 02', 40, 'WB20AB1235', TRUE, TRUE),
+('Bus 03', 40, 'WB20AB1236', TRUE, TRUE),
+('Bus 04', 25, 'WB20AB1237', FALSE, TRUE),
+('Bus 05', 25, 'WB20AB1238', FALSE, TRUE),
+('Bus 06', 25, 'WB20AB1239', FALSE, TRUE);
+
+-- Insert route_stops data for Route 1
+INSERT INTO route_stops (route_id, stop_id, stop_sequence, distance_from_previous, time_from_previous) VALUES
+-- Route 1: RK To Nalanda PINK
+(1, 10, 1, 0, 0), -- RK
+(1, 3, 2, 0.8, 2), -- SNVH
+(1, 2, 3, 0.2, 1), -- Clock Tower (start)
+(1, 6, 4, 0.3, 2), -- CSE Department
+(1, 4, 5, 0.25, 2), -- Vikramshila
+(1, 5, 6, 1, 4), -- Nalanda
+
+-- Route 2: Tech M to Puri Gate BLUE
+(2, 7, 1, 0, 0), -- Tech M (start)
+(2, 15, 2, 0.3, 2), -- BC Roy
+(2, 17, 3, 0.3, 2), -- PFC (Pan Loop)
+(2, 8, 4, 0.4, 3), -- Gymkhana
+(2, 11, 5, 0.45, 3), -- VS
+(2, 1, 6, 0.5, 4), -- Main Building
+(2, 17, 7, 0.6, 6), -- Puri Gate
+
+-- Route 3:MMM to Main Building GREEN
+(3, 9, 1, 0, 0), -- MMM
+(3, 10, 2, 0.9, 6), -- RK
+(3, 2, 3, 0.3, 2), -- Clock Tower
+(3, 6, 4, 0.2, 2), -- CSE dept
+(3, 9, 5, 0.3, 3), -- Mech Department
+(3, 13, 6, 0.3, 3), -- Nehru Museum
+(3, 14, 7, 0.4, 4), -- OENA
+(3, 13, 8, 0.3, 3), -- Aero
+(3, 12, 9, 0.25, 2), -- EE
+(3, 1, 10, 0.2, 1), -- Main Building 
+
+-- Route 1 Return: Nalanda to RK (PINK)
+(4, 5, 1, 0, 0), -- Nalanda  
+(4, 4, 2, 0.25, 2), -- Vikramshila  
+(4, 6, 3, 0.3, 2), -- CSE Department  
+(4, 2, 4, 0.2, 1), -- Clock Tower (start)  
+(4, 3, 5, 0.8, 2), -- SNVH  
+(4, 10, 6, 1, 5), -- RK  
+
+-- Route 2 Return: Puri Gate to Tech M (BLUE)
+(5, 17, 1, 0, 0), -- Puri Gate  
+(5, 1, 2, 0.5, 4), -- Main Building  
+(5, 11, 3, 0.45, 3), -- VS  
+(5, 8, 4, 0.4, 3), -- Gymkhana  
+(5, 17, 5, 0.3, 2), -- PFC (Pan Loop)  
+(5, 15, 6, 0.3, 2), -- BC Roy  
+(5, 7, 7, 0.3, 3), -- Tech M (start)  
+
+-- Route 3 Return: Main Building to MMM (GREEN)
+(6, 1, 1, 0, 0), -- Main Building (start)  
+(6, 12, 2, 0.25, 2), -- EE  
+(6, 13, 3, 0.3, 3), -- Aero  
+(6, 14, 4, 0.4, 4), -- OENA  
+(6, 13, 5, 0.3, 3), -- Nehru Museum  
+(6, 9, 6, 0.3, 3), -- Mech Department  
+(6, 6, 7, 0.2, 2), -- CSE dept  
+(6, 2, 8, 0.3, 2), -- Clock Tower  
+(6, 10, 9, 0.9, 6), -- RK  
+(6, 9, 10, 0.9, 6), -- MMM  
+
+
+-- Insert schedule data for Nalanda classes
+INSERT INTO schedule (route_id, vehicle_id, start_time, day_of_week, is_active) VALUES
+-- Route 1 schedules (to reach Nalanda before class times)
+(1, 1, '07:40:00', 'Weekday', TRUE), -- To reach Nalanda before 8 AM
+(1, 2, '08:40:00', 'Weekday', TRUE), -- To reach Nalanda before 9 AM
+(1, 1, '09:40:00', 'Weekday', TRUE), -- To reach Nalanda before 10 AM
+(1, 2, '10:40:00', 'Weekday', TRUE), -- To reach Nalanda before 11 AM
+(1, 1, '11:40:00', 'Weekday', TRUE), -- To reach Nalanda before 12 PM
+(1, 2, '13:40:00', 'Weekday', TRUE), -- To reach Nalanda before 2 PM
+(1, 1, '14:40:00', 'Weekday', TRUE), -- To reach Nalanda before 3 PM
+(1, 2, '15:40:00', 'Weekday', TRUE), -- To reach Nalanda before 4 PM
+
+-- Return schedules from Nalanda after classes
+(4, 1, '08:10:00', 'Weekday', TRUE), -- Return after 8 AM class
+(4, 2, '09:10:00', 'Weekday', TRUE), -- Return after 9 AM class
+(4, 1, '10:10:00', 'Weekday', TRUE), -- Return after 10 AM class
+(4, 2, '11:10:00', 'Weekday', TRUE), -- Return after 11 AM class
+(4, 1, '12:10:00', 'Weekday', TRUE), -- Return after 12 PM class
+(4, 2, '14:10:00', 'Weekday', TRUE), -- Return after 2 PM class
+(4, 1, '15:10:00', 'Weekday', TRUE), -- Return after 3 PM class
+(4, 2, '16:10:00', 'Weekday', TRUE); -- Return after 4 PM class
+
+-- Insert other route schedules
+INSERT INTO schedule (route_id, vehicle_id, start_time, day_of_week, is_active) VALUES
+
+-- Route 2 schedules
+(2, 3, '07:30:00', 'Weekday', TRUE),
+(2, 3, '08:30:00', 'Weekday', TRUE),
+(2, 3, '09:30:00', 'Weekday', TRUE),
+(2, 3, '14:30:00', 'Weekday', TRUE),
+(2, 3, '17:30:00', 'Weekday', TRUE),
+
+-- Route 3 schedules
+(3, 4, '08:00:00', 'Weekday', TRUE),
+(3, 4, '10:00:00', 'Weekday', TRUE),
+(3, 4, '12:00:00', 'Weekday', TRUE),
+(3, 4, '15:00:00', 'Weekday', TRUE),
+
+-- Return schedules
+(5, 5, '09:00:00', 'Weekday', TRUE),
+(5, 5, '11:00:00', 'Weekday', TRUE),
+(5, 5, '13:00:00', 'Weekday', TRUE),
+(5, 5, '16:00:00', 'Weekday', TRUE);
+
+-- Route 6 schedules
+(6, 6, '08:00:00', 'Weekday', TRUE),
+(6, 6, '09:00:00', 'Weekday', TRUE),
+(6, 6, '10:00:00', 'Weekday', TRUE),
+(6, 6, '11:00:00', 'Weekday', TRUE),
+(6, 6, '12:00:00', 'Weekday', TRUE),
+(6, 6, '14:00:00', 'Weekday', TRUE),
+(6, 6, '15:00:00', 'Weekday', TRUE),
+(6, 6, '16:00:00', 'Weekday', TRUE),
+
+
+-- Sample live tracking data (this would typically be updated in real-time)
+INSERT INTO live_tracking (vehicle_id, route_id, current_latitude, current_longitude, current_stop_id, next_stop_id, timestamp, speed, heading, is_delayed, delay_minutes) VALUES
+(1, 1, 22.317300, 87.307500, 2, 5, NOW(), 15.5, 45.0, FALSE, 0),
+(2, 4, 22.316900, 87.316800, 4, 3, NOW(), 12.3, 270.0, TRUE, 5),
+(3, 2, 22.315000, 87.301000, 6, 8, NOW(), 18.7, 30.0, FALSE, 0);
+
+-- Sample notifications
+INSERT INTO notifications (title, message, route_id, stop_id, severity, start_time, end_time, is_active) VALUES
+('Route 1 Delay', 'Route 1 buses are running 10 minutes late due to road maintenance near Clock Tower', 1, 2, 'Warning', NOW(), NOW() + INTERVAL '3 hours', TRUE),
+('Bus 03 Out of Service', 'Bus 03 is temporarily out of service for maintenance', NULL, NULL, 'Info', NOW(), NOW() + INTERVAL '2 days', TRUE),
+('Road Closure at Nalanda', 'Temporary road closure near Nalanda Complex. Buses will use alternate route.', NULL, 4, 'Critical', NOW(), NOW() + INTERVAL '5 hours', TRUE);
+
+-- Sample user feedback
+INSERT INTO user_feedback (user_id, vehicle_id, route_id, feedback_type, description, rating, timestamp, is_resolved) VALUES
+(101, 1, 1, 'Delay', 'Bus was 15 minutes late', 2, NOW() - INTERVAL '2 days', TRUE),
+(102, 2, 4, 'Cleanliness', 'Bus was very clean and well maintained', 5, NOW() - INTERVAL '1 day', TRUE),
+(103, 3, 2, 'Crowding', 'Too many people during morning rush', 3, NOW() - INTERVAL '12 hours', FALSE);                            

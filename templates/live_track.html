@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Location Tracking</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvJK1GzfKt7ksiZxxshHDL2tnefB1ifJI&callback=initMap" async defer></script>
+    <style>
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">Live Location Tracking</h2>
+    <div id="map"></div>
+
+    <script>
+        let map, marker;
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 22.3182, lng: 87.3098 }, // Default to CSE Department, IIT KGP
+                zoom: 15
+            });
+
+            marker = new google.maps.Marker({
+                position: { lat: 22.3182, lng: 87.3098 },
+                map: map,
+                title: "Your Location",
+                icon: {
+                    url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png", // Custom marker for user location
+                    scaledSize: new google.maps.Size(40, 40)
+                }
+            });
+
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(updatePosition, handleError, {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                });
+            } else {
+                alert("Geolocation is not supported by your browser.");
+            }
+        }
+
+        function updatePosition(position) {
+            const userLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+
+            marker.setPosition(userLocation);
+            map.setCenter(userLocation);
+        }
+
+        function handleError(error) {
+            console.error("Error getting location:", error);
+            alert("Error getting your location. Make sure GPS is enabled.");
+        }
+    </script>
+</body>
+</html>

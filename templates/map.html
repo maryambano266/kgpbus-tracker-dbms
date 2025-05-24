@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IIT KGP Bus Stops Map</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvJK1GzfKt7ksiZxxshHDL2tnefB1ifJI&callback=initMap" async defer></script>
+    <style>
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">IIT KGP Bus Stops</h2>
+    <div id="map"></div>
+    
+    <script>
+        function initMap() {
+            var map = new google.maps.Map(document.getElementById('map'), {
+                center: {lat: 22.3182, lng: 87.3098}, // Center near CSE Department
+                zoom: 15
+            });
+
+            var busStops = [
+                {name: "Main Building", lat: 22.3197, lon: 87.3095},
+                {name: "Clock Tower", lat: 22.3171, lon: 87.3071},
+                {name: "Vikramshila", lat: 22.3176, lon: 87.3115},
+                {name: "Nalanda", lat: 22.3167, lon: 87.3173},
+                {name: "CSE Department", lat: 22.3182, lon: 87.3098},
+                {name: "Tech M", lat: 22.3148, lon: 87.3006},
+                {name: "Gymkhana", lat: 22.3192, lon: 87.3029},
+                {name: "BC Roy", lat: 22.3172, lon: 87.3009},
+                {name: "Mech Department", lat: 22.3190, lon: 87.3124},
+                {name: "PFC (Pan Loop)", lat: 22.3191, lon: 87.3002},
+                {name: "Puri Gate", lat: 22.3225, lon: 87.3102},
+                {name: "SBP Hall", lat: 22.3118, lon: 87.3184},
+                {name: "Nehru Museum", lat: 22.3189, lon: 87.3149}
+            ];
+
+            busStops.forEach(function(stop) {
+                var marker = new google.maps.Marker({
+                    position: {lat: stop.lat, lng: stop.lon},
+                    map: map,
+                    title: stop.name
+                });
+
+                var infoWindow = new google.maps.InfoWindow({
+                    content: `<strong>${stop.name}</strong>`
+                });
+
+                marker.addListener('click', function() {
+                    infoWindow.open(map, marker);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

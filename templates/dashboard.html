@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Bus Tracker</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #f39c12;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .custom-card {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border: none;
+            margin-top: 30px;
+        }
+        
+        .card-header {
+            border-bottom: none;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+        }
+        
+        .card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-title {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-success {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-warning {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+            padding: 15px;
+        }
+        
+        .welcome-message {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .card-text {
+            color: #7f8c8d;
+        }
+        
+        .feature-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .btn-group {
+            margin-top: auto;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            background-color: var(--dark-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--dark-color);">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-bus me-2"></i>Campus Bus Tracker
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/track">Track</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/view_routes">Routes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/view_schedules">Schedules</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/feedback">Feedback</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card custom-card">
+                    <div class="card-header">
+                        <h2 class="welcome-message mb-0">
+                            <i class="fas fa-hand-wave me-2"></i>Welcome, {{ current_user.username }}!
+                        </h2>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="card feature-card mb-0">
+                                    <div class="card-body text-center">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                        </div>
+                                        <h5 class="card-title">Track Buses</h5>
+                                        <p class="card-text">View real-time bus locations and track their routes on campus.</p>
+                                        <a href="/track" class="btn btn-primary">
+                                            <i class="fas fa-location-arrow me-2"></i>View Buses
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card feature-card mb-0">
+                                    <div class="card-body text-center">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-search-location"></i>
+                                        </div>
+                                        <h5 class="card-title">Find Nearest Bus Stop</h5>
+                                        <p class="card-text">Locate the closest bus stop to your current location on campus.</p>
+                                        <form id="findNearestBusForm" action="/show_nearest_stop" method="POST">
+                                            <input type="hidden" name="latitude" id="latitude">
+                                            <input type="hidden" name="longitude" id="longitude">
+                                            <button type="button" id="findNearestBusBtn" class="btn btn-success">
+                                                <i class="fas fa-compass me-2"></i>Find Nearest Stop
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card feature-card mb-0">
+                                    <div class="card-body text-center">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-map-signs"></i>
+                                        </div>
+                                        <h5 class="card-title">Bus Stops</h5>
+                                        <p class="card-text">View a comprehensive list of all bus stops available on campus.</p>
+                                        <a href="#" id="viewBusStopsBtn" class="btn btn-info">
+                                            <i class="fas fa-list-ul me-2"></i>View Stops
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card feature-card mb-0">
+                                    <div class="card-body text-center">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-route"></i>
+                                        </div>
+                                        <h5 class="card-title">Routes & Schedules</h5>
+                                        <p class="card-text">Access detailed bus routes and daily schedules for planning.</p>
+                                        <div class="btn-group">
+                                            <a href="/view_routes" class="btn btn-warning me-2">
+                                                <i class="fas fa-road me-1"></i>Routes
+                                            </a>
+                                            <a href="/view_schedules" class="btn btn-danger">
+                                                <i class="fas fa-clock me-1"></i>Schedules
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card feature-card mb-0">
+                                    <div class="card-body text-center">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-comment-alt"></i>
+                                        </div>
+                                        <h5 class="card-title">Feedback</h5>
+                                        <p class="card-text">Share your thoughts and suggestions to help us improve the service.</p>
+                                        <a href="/feedback" class="btn btn-warning">
+                                            <i class="fas fa-paper-plane me-2"></i>Give Feedback
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card feature-card mb-0">
+                                    <div class="card-body text-center">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-map"></i>
+                                        </div>
+                                        <h5 class="card-title">Campus Map</h5>
+                                        <p class="card-text">Visualize all routes on an interactive campus map for easy navigation.</p>
+                                        <a href="/image" class="btn btn-primary">
+                                            <i class="fas fa-map-marked-alt me-2"></i>Open Map
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bus Stops Modal -->
+    <div class="modal fade" id="busStopsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-map-marker me-2"></i>Campus Bus Stops
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="busStopsContent">
+                    <!-- Bus stops will be dynamically inserted here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container text-center">
+            <p class="mb-0">© 2025 Campus Bus Tracker. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('findNearestBusBtn').addEventListener('click', function() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    // Set latitude and longitude in hidden form inputs
+                    document.getElementById('latitude').value = position.coords.latitude;
+                    document.getElementById('longitude').value = position.coords.longitude;
+                    
+                    // Submit the form
+                    document.getElementById('findNearestBusForm').submit();
+                }, function(error) {
+                    alert("Error getting location: " + error.message);
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        });
+
+        document.getElementById('viewBusStopsBtn').addEventListener('click', function() {
+            fetch('/stops')
+                .then(response => response.json())
+                .then(stops => {
+                    const stopsContent = document.getElementById('busStopsContent');
+                    let stopsList = '<div class="list-group">';
+                    stops.forEach((stop, index) => {
+                        stopsList += `
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-1">${stop.name}</h5>
+                                        <p class="mb-1 text-muted">
+                                            <i class="fas fa-map-pin me-1"></i>
+                                            Latitude: ${stop.latitude.toFixed(4)}, Longitude: ${stop.longitude.toFixed(4)}
+                                        </p>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">${index + 1}</span>
+                                </div>
+                            </div>`;
+                    });
+                    stopsList += '</div>';
+                    stopsContent.innerHTML = stopsList;
+                    var busStopsModal = new bootstrap.Modal(document.getElementById('busStopsModal'));
+                    busStopsModal.show();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Could not retrieve bus stops');
+                });
+        });
+    </script>
+</body>
+</html>

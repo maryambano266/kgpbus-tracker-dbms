@@ -1,0 +1,12 @@
+eventlet
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+WTForms
+googlemaps
+geopy
+pytz
+folium
+Flask-SocketIO
+Flask-Cors

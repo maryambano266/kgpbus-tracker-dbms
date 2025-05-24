@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Track Mobile Location</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        h1 {
+            color: #333;
+        }
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        #locationInfo, #connectionStatus {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .waiting {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mobile Location Tracker</h1>
+    <div id="connectionStatus" class="waiting">Waiting for connection...</div>
+    <div id="locationInfo" class="waiting">Waiting for location...</div>
+    <div id="map"></div>
+    
+    <script>
+        let map;
+        let marker;
+        let socket = io();
+        const connectionStatus = document.getElementById('connectionStatus');
+        const locationInfo = document.getElementById('locationInfo');
+        
+        socket.on('connect', function() {
+            console.log('Connected to server');
+            connectionStatus.textContent = 'Connected to server';
+            connectionStatus.className = 'connected';
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('Disconnected from server');
+            connectionStatus.textContent = 'Disconnected from server';
+            connectionStatus.className = 'disconnected';
+        });
+        
+        socket.on('connection_established', function(data) {
+            console.log('Connection established:', data);
+        });
+        
+        socket.on('location_update', function(data) {
+            console.log('Received location update:', data);
+            if (data.latitude && data.longitude) {
+                locationInfo.innerHTML = 
+                    `Location: Lat ${data.latitude.toFixed(6)}, Lng ${data.longitude.toFixed(6)}`;
+                locationInfo.className = 'connected';
+                
+                // Update map marker if map is initialized
+                if (map && marker) {
+                    const newLatLng = { lat: data.latitude, lng: data.longitude };
+                    marker.setPosition(newLatLng);
+                    map.setCenter(newLatLng);
+                    
+                    // Add a small animation to make the update more visible
+                    marker.setAnimation(google.maps.Animation.BOUNCE);
+                    setTimeout(function() {
+                        marker.setAnimation(null);
+                    }, 1500);
+                }
+            }
+        });
+        
+        // Initialize Google Maps
+        function initMap() {
+            // Default location (IIT KGP from your data)
+            const defaultLocation = { lat: 22.3196, lng: 87.3095 };
+            
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 16,
+                center: defaultLocation,
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                mapTypeControl: true,
+                mapTypeControlOptions: {
+                    style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
+                }
+            });
+            
+            marker = new google.maps.Marker({
+                position: defaultLocation,
+                map: map,
+                title: 'Mobile Location',
+                animation: google.maps.Animation.DROP
+            });
+            
+            // Create an info window to add some context
+            const infoWindow = new google.maps.InfoWindow({
+                content: "<div>Mobile Location</div>"
+            });
+            
+            // Show info window when marker is clicked
+            marker.addListener('click', function() {
+                infoWindow.open(map, marker);
+            });
+        }
+    </script>
+    
+    <!-- Load Google Maps API with your key -->
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvJK1GzfKt7ksiZxxshHDL2tnefB1ifJI&callback=initMap">
+    </script>
+</body>
+</html>
